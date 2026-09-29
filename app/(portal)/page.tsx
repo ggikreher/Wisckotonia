@@ -1,0 +1,140 @@
+import Link from "next/link"
+import { DateBadge } from "@/components/date-badge"
+import { auth } from "@/auth"
+import { greetingForNow } from "@/lib/dates"
+import { BOARD_ROLES, boardRoleLabel, formatBytes } from "@/lib/constants"
+import { formatTime } from "@/lib/dates"
+import { prisma } from "@/lib/prisma"
+
+export default async function HomePage() {
+  const session = await auth()
+  const name = session?.user.name ?? session?.user.username ?? "dispuutsgenoot"
+  const now = new Date()
+
+  const [memberCount, documentCount, albumCount, upcomingCount, board, upcoming, documents] = await Promise.all([
+    prisma.member.count(),
+    prisma.document.count(),
+    prisma.photoAlbum.count(),
+    prisma.event.count({ where: { startsAt: { gte: now } } }),
+    prisma.member.findMany({
+      where: { boardRole: { not: null } },
+      select: { name: true, boardRole: true },
+    }),
+    prisma.event.findMany({
+      where: { startsAt: { gte: now } },
+      orderBy: { startsAt: "asc" },
+      take: 3,
+    }),
+    prisma.document.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 3,
+    }),
+  ])
+
+  const stats = [
+    { label: "Leden", value: memberCount, href: "/leden" },
+    { label: "Komende avonden", value: upcomingCount, href: "/agenda" },
+    { label: "Fotomapjes", value: albumCount, href: "/fotos" },
+    { label: "Documenten", value: documentCount, href: "/documenten" },
+  ]
+
+  return (
+    <div>
+      <p className="text-[11px] font-medium tracking-[0.2em] text-brass uppercase">Overzicht</p>
+      <h1 className="mt-2 max-w-3xl font-serif text-4xl tracking-tight md:text-5xl">{greetingForNow(name)}</h1>
+      <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+        Dit is de besloten plek van Wisckotonia. Hier vind je de dispuutsgenoten, wat er op de planning staat, de foto's en de stukken die ertoe doen.
+      </p>
+
+      <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <li key={stat.href}>
+            <Link href={stat.href} className="block rounded-xl border border-border bg-card px-4 py-4 hover:border-brass/50">
+              <span className="font-serif text-3xl">{stat.value}</span>
+              <span className="mt-1 block text-sm text-muted-foreground">{stat.label}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+
+      <section className="mt-8">
+        <div className="mb-3 flex items-end justify-between">
+          <h2 className="font-serif text-2xl">Bestuur</h2>
+          <Link href="/leden" className="text-sm text-primary hover:underline">
+            Leden
+          </Link>
+        </div>
+        <ul className="grid gap-3 sm:grid-cols-3">
+          {BOARD_ROLES.map((role) => {
+            const holder = board.find((member) => member.boardRole === role)
+            return (
+              <li key={role} className="rounded-xl border border-border bg-card px-4 py-4">
+                <p className="text-[11px] tracking-[0.16em] text-brass uppercase">{boardRoleLabel(role)}</p>
+                <p className="mt-1 font-serif text-2xl">{holder?.name ?? "Nog niet aangewezen"}</p>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
+
+      <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <section>
+          <div className="mb-3 flex items-end justify-between">
+            <h2 className="font-serif text-2xl">Eerstvolgende</h2>
+            <Link href="/agenda" className="text-sm text-primary hover:underline">
+              Hele agenda
+            </Link>
+          </div>
+          {upcoming.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
+              Er staan geen komende evenementen in de agenda.
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {upcoming.map((event) => (
+                <li key={event.id}>
+                  <Link href="/agenda" className="flex gap-4 rounded-xl border border-border bg-card p-4 hover:border-brass/50">
+                    <DateBadge iso={event.startsAt.toISOString()} />
+                    <span className="min-w-0">
+                      <span className="block font-serif text-xl">{event.title}</span>
+                      <span className="mt-1 block text-sm text-muted-foreground">
+                        {formatTime(event.startsAt)} · {event.location}
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section>
+          <div className="mb-3 flex items-end justify-between">
+            <h2 className="font-serif text-2xl">Recente stukken</h2>
+            <Link href="/documenten" className="text-sm text-primary hover:underline">
+              Archief
+            </Link>
+          </div>
+          {documents.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
+              Er zijn nog geen documenten geüpload.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+              {documents.map((document) => (
+                <li key={document.id}>
+                  <Link href="/documenten" className="block px-4 py-3 hover:bg-secondary/50">
+                    <span className="block font-medium">{document.title}</span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      {document.category} · {formatBytes(document.sizeBytes)}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </div>
+  )
+}

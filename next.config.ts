@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: ["@prisma/client", "bcryptjs"],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "15mb",
+    },
+    proxyClientMaxBodySize: "15mb",
+  },
 };
 
 export default nextConfig;

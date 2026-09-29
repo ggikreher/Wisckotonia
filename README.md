@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Wisckotonia
 
-## Getting Started
+Besloten platform voor dispuut Wisckotonia. Leden loggen in om de galerij, de agenda en de documenten te bekijken. Beheerders maken accounts aan en onderhouden de inhoud.
 
-First, run the development server:
+## Starten
+
+1. Zet PostgreSQL klaar:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Kopieer de omgevingsvariabelen en vul een eigen `AUTH_SECRET` in:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+copy .env.example .env
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Maak de database en de voorbeelddata aan:
 
-## Learn More
+```bash
+npx prisma migrate dev --name init
+npx prisma db seed
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+De site staat daarna op [http://localhost:3000](http://localhost:3000). PostgreSQL draait via Docker op poort **5433**, zodat een andere database op de standaardpoort 5432 niet in de weg zit.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Inloggen
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+De seed maakt twee accounts. Wijzig deze wachtwoorden zodra het platform echt in gebruik is.
 
-## Deploy on Vercel
+| Rol | Gebruikersnaam | E-mail | Wachtwoord |
+| --- | --- | --- | --- |
+| Beheerder | `admin` | admin@wisckotonia.nl | `WisckoAdmin2026!` |
+| Dispuutslid | `lid` | lid@wisckotonia.nl | `WisckoLid2026!` |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Een dispuutslid kan alles bekijken, documenten downloaden en eigen evenementen toevoegen. Een eigen evenement kan alleen de maker aanpassen of verwijderen. Een beheerder kan daarnaast accounts, leden en documenten beheren, en elk evenement wijzigen.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Rollen
+
+- `DISPUUT` — ingelogd lid.
+- `ADMIN` — beheerder. Alleen deze rol mag `/admin` openen, leden en documenten wijzigen, en elk evenement aanpassen.
+
+Niet-ingelogde bezoekers worden doorgestuurd naar `/login`. Die controle staat in `proxy.ts`. In Next.js 16 is dat de opvolger van `middleware.ts`. Elke wijziging controleert de rol daarnaast nog een keer op de server.
+
+Inlogaccounts en de ledenkaartjes in de galerij zijn twee aparte dingen. Een account maak je onder Beheer; een kaartje onder Leden.
+
+## Bestanden
+
+Geüploade foto's en documenten komen in `uploads/` en worden alleen via een ingelogde route uitgeleverd, niet als openbaar bestand.
