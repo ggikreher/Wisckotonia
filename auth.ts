@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 import { authConfig } from "@/auth.config"
+import { authSecret } from "@/lib/auth-secret"
 import { prisma } from "@/lib/prisma"
 
 const credentialsSchema = z.object({
@@ -19,6 +20,7 @@ function dummyHash() {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  secret: authSecret(),
   providers: [
     Credentials({
       credentials: {
@@ -29,8 +31,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         const shortcut = credentials?.adminShortcut
         if (typeof shortcut === "string" && shortcut.length > 0) {
-          const secret = process.env.AUTH_SECRET
-          if (!secret || shortcut !== secret) return null
+          if (shortcut !== authSecret()) return null
 
           const admins = await prisma.user.findMany({
             where: { role: "ADMIN" },
