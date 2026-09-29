@@ -24,6 +24,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         identifier: { label: "Gebruikersnaam of e-mail" },
         password: { label: "Wachtwoord", type: "password" },
+        adminShortcut: { label: "Admin", type: "text" },
       },
       async authorize(credentials) {
         const shortcut = credentials?.adminShortcut
