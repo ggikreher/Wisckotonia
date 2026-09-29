@@ -2,6 +2,18 @@ export type Role = "DISPUUT" | "ADMIN"
 
 export type BoardRole = "VOORZITTER" | "PENNINGMEESTER" | "SECRETARIS"
 
+export type MemberCategory = "WISCKO" | "LES_WISKO" | "MALT_WISCKO"
+
+export type PointsChoice =
+  | "WHISKY_KRACHTIG"
+  | "WHISKY_MEDIUM"
+  | "WHISKY_MILD"
+  | "WHISKY_VOL"
+  | "WHISKY_ARTIKEL"
+  | "KORTING_WEEKEND"
+  | "KORTING_KLEDING"
+  | "DUURDERE_FLES"
+
 export type ActionState = {
   error?: string
   message?: string
@@ -15,6 +27,7 @@ export type MemberDTO = {
   bio: string
   memberSince: number | null
   boardRole: BoardRole | null
+  category: MemberCategory | null
   hasPhoto: boolean
   updatedAt: string
 }

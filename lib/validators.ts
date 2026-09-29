@@ -19,6 +19,9 @@ export const memberSchema = z.object({
   boardRole: z.enum(["", "VOORZITTER", "PENNINGMEESTER", "SECRETARIS"], {
     message: "Kies een geldige bestuursrol.",
   }),
+  category: z.enum(["WISCKO", "LES_WISKO", "MALT_WISCKO"], {
+    message: "Kies een categorie: Wiscko, Les-Wisko of Malt-Wiscko.",
+  }),
   memberSince: z
     .string()
     .trim()
@@ -67,6 +70,24 @@ export const documentSchema = z.object({
     .trim()
     .min(2, { message: "Kies of vul een categorie in." })
     .max(60, { message: "De categorie is te lang." }),
+})
+
+export const pointsChoiceSchema = z.object({
+  choice: z.enum(
+    [
+      "",
+      "WHISKY_KRACHTIG",
+      "WHISKY_MEDIUM",
+      "WHISKY_MILD",
+      "WHISKY_VOL",
+      "WHISKY_ARTIKEL",
+      "KORTING_WEEKEND",
+      "KORTING_KLEDING",
+      "DUURDERE_FLES",
+    ],
+    { message: "Kies een geldige optie." },
+  ),
+  followUp: z.string().trim().max(500, { message: "Houd de vervolgvraag onder 500 tekens." }),
 })
 
 export const createUserSchema = z.object({

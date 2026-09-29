@@ -125,11 +125,11 @@ export function PhotoLibrary({ albums }: { albums: AlbumDTO[] }) {
           {visible.length === 0 ? (
             <EmptyState title="Geen mapjes gevonden" text={`Geen mapjes voor “${query.trim()}”.`} />
           ) : (
-        <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
           {visible.map((album) => (
             <li key={album.id} className="overflow-hidden rounded-xl border border-border bg-card">
               <Link href={`/fotos/${album.id}`} className="block">
-                <div className="flex aspect-[4/3] items-center justify-center overflow-hidden bg-secondary">
+                <div className="flex aspect-video items-center justify-center overflow-hidden bg-secondary">
                   {album.coverPhotoId ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -141,8 +141,8 @@ export function PhotoLibrary({ albums }: { albums: AlbumDTO[] }) {
                     <Folder className="size-10 text-muted-foreground" />
                   )}
                 </div>
-                <div className="space-y-1 px-4 pt-4">
-                  <h2 className="font-serif text-2xl leading-tight">{album.name}</h2>
+                <div className="space-y-1 px-3 pt-3">
+                  <h2 className="font-serif text-xl leading-tight">{album.name}</h2>
                   <p className="text-sm text-muted-foreground">{photoLabel(album.photoCount)}</p>
                   {album.createdByName ? (
                     <p className="text-xs text-muted-foreground">Aangemaakt door {album.createdByName}</p>

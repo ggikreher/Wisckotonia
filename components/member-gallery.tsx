@@ -16,10 +16,10 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { deleteMember, saveMember } from "@/lib/actions/members"
-import { BOARD_ROLES, boardRoleLabel } from "@/lib/constants"
+import { BOARD_ROLES, MEMBER_CATEGORIES, boardRoleLabel, memberCategoryLabel } from "@/lib/constants"
 import type { MemberDTO } from "@/lib/types"
 
-const PALETTE = ["#6e2433", "#1c3b34", "#3c4d6e", "#6a4528", "#4c3348", "#2d4a3a"]
+const PALETTE = ["#000080", "#1c3b34", "#3c4d6e", "#6a4528", "#4c3348", "#2d4a3a"]
 
 function colorFor(name: string) {
   let hash = 0
@@ -107,6 +107,24 @@ function MemberForm({ member, onDone }: { member?: MemberDTO | null; onDone: () 
       </Field>
       <Field label="Titel of functie" htmlFor="title">
         <Input id="title" name="title" defaultValue={member?.title} required />
+      </Field>
+      <Field label="Categorie" htmlFor="category" hint="Elk lid hoort bij één categorie.">
+        <select
+          id="category"
+          name="category"
+          defaultValue={member?.category ?? ""}
+          required
+          className="h-10 w-full rounded-md border border-input bg-card px-3 text-sm"
+        >
+          <option value="" disabled>
+            Kies een categorie
+          </option>
+          {MEMBER_CATEGORIES.map((category) => (
+            <option key={category} value={category}>
+              {memberCategoryLabel(category)}
+            </option>
+          ))}
+        </select>
       </Field>
       <Field
         label="Bestuursrol"
@@ -202,15 +220,18 @@ export function MemberGallery({ members, isAdmin }: { members: MemberDTO[]; isAd
           text={isAdmin ? "Voeg het eerste lid toe om de galerij te vullen." : "De galerij is nog leeg."}
         />
       ) : (
-        <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
           {members.map((member) => (
             <li key={member.id} className="overflow-hidden rounded-xl border border-border bg-card">
-              <div className="aspect-[4/5] overflow-hidden bg-secondary">
+              <div className="aspect-square overflow-hidden bg-secondary">
                 <Portrait member={member} />
               </div>
-              <div className="space-y-2 p-4">
+              <div className="space-y-2 p-3">
                 <div>
-                  <h2 className="font-serif text-2xl leading-tight">{member.name}</h2>
+                  <h2 className="font-serif text-xl leading-tight">{member.name}</h2>
+                  {member.category ? (
+                    <p className="mt-1 text-sm text-primary">{memberCategoryLabel(member.category)}</p>
+                  ) : null}
                   <p className="mt-1 text-[11px] tracking-[0.16em] text-brass uppercase">
                     {member.boardRole ? boardRoleLabel(member.boardRole) : member.title}
                   </p>

@@ -5,7 +5,7 @@ export function Mark({ className, light = false }: { className?: string; light?:
     <span
       className={cn(
         "inline-flex size-10 items-center justify-center rounded-md",
-        light ? "bg-[#e7d3ae] text-[#14211e]" : "bg-sidebar text-[#e7d3ae]",
+        light ? "bg-white text-[#000080]" : "bg-sidebar text-[#e7d3ae]",
         className,
       )}
     >

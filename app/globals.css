@@ -5,9 +5,9 @@
   --foreground: #1c1714;
   --card: #fbf8f4;
   --card-foreground: #1c1714;
-  --primary: #6e2433;
+  --primary: #000080;
   --primary-foreground: #fbf6f1;
-  --secondary: #ebe3d6;
+  --secondary: #ffffff;
   --secondary-foreground: #1c1714;
   --muted: #ebe3d6;
   --muted-foreground: #6f675f;
@@ -16,9 +16,9 @@
   --destructive: #8d2f2f;
   --border: #e3d9cb;
   --input: #e3d9cb;
-  --ring: #6e2433;
+  --ring: #000080;
   --radius: 0.7rem;
-  --sidebar: #14211e;
+  --sidebar: #000080;
   --sidebar-foreground: #f3ece3;
   --brass: #9a7848;
 }
@@ -62,13 +62,13 @@ html {
 body {
   min-height: 100%;
   background-color: var(--background);
-  background-image: radial-gradient(ellipse at top, rgba(154, 120, 72, 0.12), transparent 55%);
+  background-image: radial-gradient(ellipse at top, rgba(0, 0, 128, 0.1), transparent 55%);
   color: var(--foreground);
   font-family: var(--font-sans);
 }
 
 ::selection {
-  background: #ead3d6;
+  background: #d1d1e8;
 }
 
 h1,

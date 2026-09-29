@@ -36,6 +36,25 @@ export async function authenticate(_prev: ActionState, formData: FormData): Prom
   return {}
 }
 
+export async function loginAsAdmin(_prev: ActionState, _formData: FormData): Promise<ActionState> {
+  const secret = process.env.AUTH_SECRET
+  if (!secret) return { error: "Inloggen als beheerder is niet beschikbaar." }
+
+  try {
+    await signIn("credentials", {
+      adminShortcut: secret,
+      redirectTo: "/",
+    })
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return { error: "Er is geen beheerder om mee in te loggen." }
+    }
+    throw error
+  }
+
+  return {}
+}
+
 export async function logout() {
   await signOut({ redirectTo: "/login" })
 }

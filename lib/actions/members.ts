@@ -27,14 +27,16 @@ export async function saveMember(_prev: ActionState, formData: FormData): Promis
     bio: formData.get("bio"),
     memberSince: formData.get("memberSince") ?? "",
     boardRole: formData.get("boardRole") ?? "",
+    category: formData.get("category") ?? "",
   })
   if (!parsed.success) return { error: issueMessage(parsed.error) }
 
-  const { memberSince, boardRole, ...memberFields } = parsed.data
+  const { memberSince, boardRole, category, ...memberFields } = parsed.data
   const memberData = {
     ...memberFields,
     memberSince: memberSince ? Number(memberSince) : null,
     boardRole: boardRole || null,
+    category,
   }
 
   const id = String(formData.get("id") ?? "")
@@ -100,6 +102,7 @@ export async function saveMember(_prev: ActionState, formData: FormData): Promis
   if (imagePath && previousPath) await removeStoredFile(previousPath)
 
   revalidatePath("/leden")
+  revalidatePath("/punten")
   revalidatePath("/")
   return done(id ? "Lid bijgewerkt." : "Lid toegevoegd.")
 }

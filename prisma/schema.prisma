@@ -18,6 +18,23 @@ enum BoardRole {
   SECRETARIS
 }
 
+enum MemberCategory {
+  WISCKO
+  LES_WISKO
+  MALT_WISCKO
+}
+
+enum PointsChoice {
+  WHISKY_KRACHTIG
+  WHISKY_MEDIUM
+  WHISKY_MILD
+  WHISKY_VOL
+  WHISKY_ARTIKEL
+  KORTING_WEEKEND
+  KORTING_KLEDING
+  DUURDERE_FLES
+}
+
 /// Inlogaccount. Staat los van de ledenkaart in de galerij.
 model User {
   id           String   @id @default(cuid())
@@ -40,7 +57,10 @@ model Member {
   bio         String
   memberSince Int?
   boardRole   BoardRole? @unique
-  imagePath   String?
+  category    MemberCategory?
+  imagePath      String?
+  pointsChoice   PointsChoice?
+  pointsFollowUp String         @default("")
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
