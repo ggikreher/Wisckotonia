@@ -37,14 +37,17 @@ function initials(name: string) {
 }
 
 function Portrait({ member }: { member: MemberDTO }) {
-  if (member.hasPhoto) {
+  const [failed, setFailed] = useState(false)
+
+  if (member.hasPhoto && !failed) {
     return (
       // De foto komt via een beveiligde route; de image-optimizer stuurt geen sessiecookie mee.
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={`/api/members/${member.id}/photo`}
+        src={`/api/members/${member.id}/photo?v=${encodeURIComponent(member.updatedAt)}`}
         alt={`Profielfoto van ${member.name}`}
         className="h-full w-full object-cover"
+        onError={() => setFailed(true)}
       />
     )
   }
@@ -145,13 +148,15 @@ function MemberForm({ member, onDone }: { member?: MemberDTO | null; onDone: () 
           ))}
         </select>
       </Field>
-      <Field label="Lid sinds" htmlFor="memberSince" hint="Jaartal, bijvoorbeeld 2019. Optioneel.">
+      <Field label="Lid sinds" htmlFor="memberSince" hint="Bijvoorbeeld 29/09/2019. Optioneel.">
         <Input
           id="memberSince"
           name="memberSince"
-          inputMode="numeric"
-          maxLength={4}
-          placeholder="2019"
+          type="text"
+          autoComplete="off"
+          spellCheck={false}
+          maxLength={10}
+          placeholder="29/09/2019"
           defaultValue={member?.memberSince ?? ""}
         />
       </Field>

@@ -25,7 +25,7 @@ export type MemberDTO = {
   name: string
   title: string
   bio: string
-  memberSince: number | null
+  memberSince: string | null
   boardRole: BoardRole | null
   category: MemberCategory | null
   hasPhoto: boolean

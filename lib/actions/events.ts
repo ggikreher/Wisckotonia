@@ -23,9 +23,9 @@ function done(message: string): ActionState {
 
 function parseRange(startsAt: string, endsAt?: string) {
   const start = amsterdamLocalToDate(startsAt)
-  if (!start) return { error: "Vul een geldige datum en tijd in." }
+  if (!start) return { error: "Vul een datum en tijd in, bijvoorbeeld 29-09-2026 20:00." }
   const end = endsAt ? amsterdamLocalToDate(endsAt) : null
-  if (endsAt && !end) return { error: "Vul een geldig eindtijdstip in." }
+  if (endsAt && !end) return { error: "Vul een datum en tijd in, bijvoorbeeld 29-09-2026 23:00." }
   if (end && end.getTime() <= start.getTime()) {
     return { error: "Het eindtijdstip moet na het begin liggen." }
   }

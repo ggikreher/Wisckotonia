@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 export const metadata = { title: "Punten sparen" }
 
 export default async function PuntenPage() {
-  const members = await prisma.member.findMany()
+  const members = await prisma.member.findMany({ omit: { imageBytes: true } })
   members.sort(compareMembers)
 
   return (

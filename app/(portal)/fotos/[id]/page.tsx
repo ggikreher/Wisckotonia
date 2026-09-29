@@ -21,7 +21,11 @@ export default async function FotoAlbumPage({ params }: { params: Promise<{ id: 
       createdBy: { select: { name: true } },
       photos: {
         orderBy: { createdAt: "asc" },
-        include: { createdBy: { select: { name: true } } },
+        select: {
+          id: true,
+          createdById: true,
+          createdBy: { select: { name: true } },
+        },
       },
     },
   })

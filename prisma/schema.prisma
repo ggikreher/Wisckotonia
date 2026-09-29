@@ -55,10 +55,12 @@ model Member {
   name        String
   title       String
   bio         String
-  memberSince Int?
+  memberSince DateTime? @db.Date
   boardRole   BoardRole? @unique
   category    MemberCategory?
   imagePath      String?
+  imageBytes     Bytes?
+  imageType      String?
   pointsChoice   PointsChoice?
   pointsFollowUp String         @default("")
   sortOrder   Int      @default(0)
@@ -99,6 +101,8 @@ model Photo {
   albumId     String
   album       PhotoAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
   storagePath String
+  imageBytes  Bytes?
+  imageType   String?
   createdById String?
   createdBy   User?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime   @default(now())

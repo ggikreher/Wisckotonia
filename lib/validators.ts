@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { amsterdamLocalToDate, parseCalendarDate } from "@/lib/dates"
 
 export function issueMessage(error: z.ZodError) {
   return error.issues[0]?.message ?? "Controleer de invoer."
@@ -17,11 +18,8 @@ export const memberSchema = z.object({
   memberSince: z
     .string()
     .trim()
-    .refine((value) => value === "" || /^\d{4}$/.test(value), {
-      message: "Vul een jaartal in, bijvoorbeeld 2019.",
-    })
-    .refine((value) => value === "" || (Number(value) >= 1900 && Number(value) <= 2100), {
-      message: "Vul een jaartal tussen 1900 en 2100 in.",
+    .refine((value) => value === "" || parseCalendarDate(value) !== null, {
+      message: "Vul een datum in, bijvoorbeeld 29/09/2019.",
     }),
 })
 
@@ -38,7 +36,26 @@ export const eventSchema = z
     endsAt: z.string().trim().optional(),
   })
   .superRefine((value, ctx) => {
-    if (value.endsAt && value.endsAt <= value.startsAt) {
+    const start = amsterdamLocalToDate(value.startsAt)
+    if (!start) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["startsAt"],
+        message: "Vul een datum en tijd in, bijvoorbeeld 29-09-2026 20:00.",
+      })
+      return
+    }
+    if (!value.endsAt) return
+    const end = amsterdamLocalToDate(value.endsAt)
+    if (!end) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["endsAt"],
+        message: "Vul een datum en tijd in, bijvoorbeeld 29-09-2026 23:00.",
+      })
+      return
+    }
+    if (end.getTime() <= start.getTime()) {
       ctx.addIssue({
         code: "custom",
         path: ["endsAt"],

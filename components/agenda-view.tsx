@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { deleteEvent, saveEvent } from "@/lib/actions/events"
-import { amsterdamParts, formatMonthLabel, formatTime, toDateTimeLocalValue } from "@/lib/dates"
+import { amsterdamParts, formatMonthLabel, formatTime, formatTypedDateTime } from "@/lib/dates"
 import type { EventDTO } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -84,21 +84,29 @@ function EventForm({ event, onDone }: { event?: EventDTO | null; onDone: () => v
         <Input id="title" name="title" defaultValue={event?.title} required />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Begin" htmlFor="startsAt">
+        <Field label="Begin" htmlFor="startsAt" hint="Typ de datum en tijd, bijvoorbeeld 29-09-2026 20:00.">
           <Input
             id="startsAt"
             name="startsAt"
-            type="datetime-local"
-            defaultValue={event ? toDateTimeLocalValue(new Date(event.startsAt)) : undefined}
+            type="text"
+            inputMode="text"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="29-09-2026 20:00"
+            defaultValue={event ? formatTypedDateTime(new Date(event.startsAt)) : undefined}
             required
           />
         </Field>
-        <Field label="Einde" htmlFor="endsAt" hint="Optioneel.">
+        <Field label="Einde" htmlFor="endsAt" hint="Optioneel. Zelfde vorm, bijvoorbeeld 29-09-2026 23:00.">
           <Input
             id="endsAt"
             name="endsAt"
-            type="datetime-local"
-            defaultValue={event?.endsAt ? toDateTimeLocalValue(new Date(event.endsAt)) : undefined}
+            type="text"
+            inputMode="text"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="29-09-2026 23:00"
+            defaultValue={event?.endsAt ? formatTypedDateTime(new Date(event.endsAt)) : undefined}
           />
         </Field>
       </div>
@@ -241,20 +249,13 @@ export function AgendaView({ events, now }: { events: EventDTO[]; now: string })
                   aria-label={cell.key}
                   className={cn(
                     "relative flex h-10 items-center justify-center rounded-md text-sm",
-                    cell.inMonth ? "text-foreground" : "text-muted-foreground/50",
-                    selected ? "bg-primary text-primary-foreground" : "hover:bg-secondary",
-                    isToday && !selected && "ring-1 ring-brass",
+                    hasEvent || selected
+                      ? "bg-primary text-primary-foreground"
+                      : cn(cell.inMonth ? "text-foreground" : "text-muted-foreground/50", "hover:bg-secondary"),
+                    selected ? "ring-2 ring-brass" : isToday ? "ring-1 ring-brass" : null,
                   )}
                 >
                   {cell.day}
-                  {hasEvent ? (
-                    <span
-                      className={cn(
-                        "absolute bottom-1 size-1 rounded-full",
-                        selected ? "bg-primary-foreground" : "bg-primary",
-                      )}
-                    />
-                  ) : null}
                 </button>
               )
             })}

@@ -55,6 +55,41 @@ export function mimeFromPath(filePath: string) {
   return EXTENSION_MIME.get(path.extname(filePath).toLowerCase()) ?? "application/octet-stream"
 }
 
+export function sniffImageMime(bytes: Uint8Array, fallback: string) {
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg"
+  if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+    return "image/png"
+  }
+  if (bytes.length >= 12) {
+    const ascii = (start: number, end: number) => String.fromCharCode(...bytes.subarray(start, end))
+    if (ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "image/webp"
+  }
+  const head = new TextDecoder().decode(bytes.subarray(0, Math.min(bytes.length, 180))).trimStart()
+  if (head.startsWith("<svg") || (head.startsWith("<?xml") && head.includes("<svg"))) return "image/svg+xml"
+  return fallback
+}
+
+/** Prisma verwacht een gewone Uint8Array, geen Node-buffer. */
+export function prismaBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
+  const copy = new Uint8Array(bytes.byteLength)
+  copy.set(bytes)
+  return copy
+}
+
+/** Kopieer de bytes. Een Node-buffer als response-body kan in productie leeg of ongeldig zijn. */
+export function fileResponse(bytes: Uint8Array, contentType: string, extraHeaders?: Record<string, string>) {
+  const body = Uint8Array.from(bytes)
+  return new Response(body, {
+    headers: {
+      "Content-Type": contentType,
+      "Content-Length": String(body.byteLength),
+      "Cache-Control": "private, no-cache",
+      "X-Content-Type-Options": "nosniff",
+      ...extraHeaders,
+    },
+  })
+}
+
 export function safeDownloadName(name: string) {
   const base = path.basename(name).replace(/[\\/:*?"<>|]/g, "_").trim()
   return base.slice(0, 140) || "document"
@@ -105,14 +140,24 @@ export function inspectDocument(file: File): { error?: string; extension?: strin
   return { extension, mimeType: file.type || EXTENSION_MIME.get(extension) || "application/octet-stream" }
 }
 
-export async function storeUpload(file: File, folder: "members" | "documents" | "photos", extension: string) {
+export async function storeUpload(
+  file: File,
+  folder: "members" | "documents" | "photos",
+  extension: string,
+  options?: { requireDisk?: boolean },
+) {
   const storedName = `${crypto.randomUUID()}${extension}`
   const directory = path.join(UPLOAD_ROOT, folder)
-  await mkdir(directory, { recursive: true })
-  const bytes = Buffer.from(await file.arrayBuffer())
-  await writeFile(path.join(directory, storedName), bytes)
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  try {
+    await mkdir(directory, { recursive: true })
+    await writeFile(path.join(directory, storedName), bytes)
+  } catch (error) {
+    if (options?.requireDisk !== false) throw error
+  }
   return {
     storagePath: `${folder}/${storedName}`,
     sizeBytes: bytes.length,
+    bytes,
   }
 }

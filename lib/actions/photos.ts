@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
-import { inspectImage, removeStoredFile, storeUpload } from "@/lib/files"
+import { inspectImage, prismaBytes, removeStoredFile, storeUpload } from "@/lib/files"
 import { prisma } from "@/lib/prisma"
 import type { ActionState } from "@/lib/types"
 import { albumSchema, issueMessage } from "@/lib/validators"
@@ -104,21 +104,27 @@ export async function uploadPhotos(_prev: ActionState, formData: FormData): Prom
     prepared.push({ file, extension: inspected.extension })
   }
 
-  const stored: string[] = []
+  const stored: { storagePath: string; bytes: Uint8Array<ArrayBuffer>; imageType: string | null }[] = []
   try {
     for (const item of prepared) {
-      const saved = await storeUpload(item.file, "photos", item.extension)
-      stored.push(saved.storagePath)
+      const saved = await storeUpload(item.file, "photos", item.extension, { requireDisk: false })
+      stored.push({
+        storagePath: saved.storagePath,
+        bytes: prismaBytes(saved.bytes),
+        imageType: item.file.type || null,
+      })
     }
     await prisma.photo.createMany({
-      data: stored.map((storagePath) => ({
+      data: stored.map((photo) => ({
         albumId,
-        storagePath,
+        storagePath: photo.storagePath,
+        imageBytes: photo.bytes,
+        imageType: photo.imageType,
         createdById: user.id,
       })),
     })
   } catch (error) {
-    await Promise.all(stored.map((storagePath) => removeStoredFile(storagePath)))
+    await Promise.all(stored.map((photo) => removeStoredFile(photo.storagePath)))
     throw error
   }
 
@@ -131,7 +137,10 @@ export async function deletePhoto(_prev: ActionState, formData: FormData): Promi
   if (!user) return { error: "Log in om een foto te verwijderen." }
 
   const id = String(formData.get("id") ?? "")
-  const existing = await prisma.photo.findUnique({ where: { id } })
+  const existing = await prisma.photo.findUnique({
+    where: { id },
+    select: { storagePath: true, createdById: true, albumId: true },
+  })
   if (!existing) return { error: "Deze foto bestaat niet meer." }
   if (!canManage(user, existing.createdById)) {
     return { error: "Je kunt alleen je eigen foto's verwijderen." }
