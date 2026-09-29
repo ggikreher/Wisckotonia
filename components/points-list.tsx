@@ -52,7 +52,9 @@ function PointsRow({ member }: { member: PointsMember }) {
     <li className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center">
       <div className="min-w-0 sm:w-56 sm:shrink-0">
         <p className="truncate font-serif text-lg leading-tight">{member.name}</p>
-        <p className="mt-1 truncate text-[11px] tracking-[0.16em] text-brass uppercase">{label}</p>
+        {label ? (
+          <p className="mt-1 truncate text-[11px] tracking-[0.16em] text-brass uppercase">{label}</p>
+        ) : null}
       </div>
       <div className="min-w-0 flex-1 space-y-2">
         <select

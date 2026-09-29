@@ -6,16 +6,8 @@ export function issueMessage(error: z.ZodError) {
 
 export const memberSchema = z.object({
   name: z.string().trim().min(2, { message: "Vul een naam in." }).max(80, { message: "De naam is te lang." }),
-  title: z
-    .string()
-    .trim()
-    .min(2, { message: "Vul een titel of functie in." })
-    .max(80, { message: "De titel is te lang." }),
-  bio: z
-    .string()
-    .trim()
-    .min(2, { message: "Vul een korte tekst in." })
-    .max(400, { message: "Houd de tekst onder 400 tekens." }),
+  title: z.string().trim().max(80, { message: "De titel is te lang." }),
+  bio: z.string().trim().max(400, { message: "Houd de tekst onder 400 tekens." }),
   boardRole: z.enum(["", "VOORZITTER", "PENNINGMEESTER", "SECRETARIS"], {
     message: "Kies een geldige bestuursrol.",
   }),

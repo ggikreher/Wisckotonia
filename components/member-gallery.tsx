@@ -105,8 +105,8 @@ function MemberForm({ member, onDone }: { member?: MemberDTO | null; onDone: () 
       <Field label="Naam" htmlFor="name">
         <Input id="name" name="name" defaultValue={member?.name} required />
       </Field>
-      <Field label="Titel of functie" htmlFor="title">
-        <Input id="title" name="title" defaultValue={member?.title} required />
+      <Field label="Titel of functie" htmlFor="title" hint="Optioneel.">
+        <Input id="title" name="title" defaultValue={member?.title} />
       </Field>
       <Field label="Categorie" htmlFor="category" hint="Elk lid hoort bij één categorie.">
         <select
@@ -155,8 +155,8 @@ function MemberForm({ member, onDone }: { member?: MemberDTO | null; onDone: () 
           defaultValue={member?.memberSince ?? ""}
         />
       </Field>
-      <Field label="Korte tekst" htmlFor="bio">
-        <Textarea id="bio" name="bio" defaultValue={member?.bio} maxLength={400} required />
+      <Field label="Korte tekst" htmlFor="bio" hint="Optioneel.">
+        <Textarea id="bio" name="bio" defaultValue={member?.bio} maxLength={400} />
       </Field>
       <FormError message={state.error} />
       <div className="flex justify-end gap-2">
@@ -232,15 +232,21 @@ export function MemberGallery({ members, isAdmin }: { members: MemberDTO[]; isAd
                   {member.category ? (
                     <p className="mt-1 text-sm text-primary">{memberCategoryLabel(member.category)}</p>
                   ) : null}
-                  <p className="mt-1 text-[11px] tracking-[0.16em] text-brass uppercase">
-                    {member.boardRole ? boardRoleLabel(member.boardRole) : member.title}
-                  </p>
-                  {member.boardRole ? <p className="mt-1 text-sm text-muted-foreground">{member.title}</p> : null}
+                  {member.boardRole ? (
+                    <p className="mt-1 text-[11px] tracking-[0.16em] text-brass uppercase">
+                      {boardRoleLabel(member.boardRole)}
+                    </p>
+                  ) : member.title ? (
+                    <p className="mt-1 text-[11px] tracking-[0.16em] text-brass uppercase">{member.title}</p>
+                  ) : null}
+                  {member.boardRole && member.title ? (
+                    <p className="mt-1 text-sm text-muted-foreground">{member.title}</p>
+                  ) : null}
                   {member.memberSince ? (
                     <p className="mt-1 text-sm text-muted-foreground">Lid sinds {member.memberSince}</p>
                   ) : null}
                 </div>
-                <p className="text-sm leading-6 text-muted-foreground">{member.bio}</p>
+                {member.bio ? <p className="text-sm leading-6 text-muted-foreground">{member.bio}</p> : null}
                 {isAdmin ? (
                   <div className="flex items-center gap-1 pt-1">
                     <Button type="button" variant="outline" size="sm" onClick={() => setEditing(member)}>
