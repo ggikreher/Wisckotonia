@@ -19,7 +19,17 @@ import { Input } from "@/components/ui/input"
 import { deleteAlbum, deletePhoto, renameAlbum, uploadPhotos } from "@/lib/actions/photos"
 import type { PhotoDTO } from "@/lib/types"
 
-function RenameForm({ id, name, onDone }: { id: string; name: string; onDone: () => void }) {
+function RenameForm({
+  id,
+  name,
+  eventDate,
+  onDone,
+}: {
+  id: string
+  name: string
+  eventDate: string | null
+  onDone: () => void
+}) {
   const [state, action, pending] = useActionState(renameAlbum, {})
 
   useEffect(() => {
@@ -31,6 +41,18 @@ function RenameForm({ id, name, onDone }: { id: string; name: string; onDone: ()
       <input type="hidden" name="id" value={id} />
       <Field label="Naam" htmlFor="rename-album">
         <Input id="rename-album" name="name" defaultValue={name} required autoFocus />
+      </Field>
+      <Field label="Datum" htmlFor="album-date" hint="Bijvoorbeeld 29/09/2026. Optioneel. De mapjes staan op deze datum.">
+        <Input
+          id="album-date"
+          name="eventDate"
+          type="text"
+          autoComplete="off"
+          spellCheck={false}
+          maxLength={10}
+          placeholder="29/09/2026"
+          defaultValue={eventDate ?? ""}
+        />
       </Field>
       <FormError message={state.error} />
       <div className="flex justify-end gap-2">
@@ -77,6 +99,7 @@ export function PhotoAlbumView({
   album: {
     id: string
     name: string
+    eventDate: string | null
     createdByName: string | null
     canManage: boolean
     photos: PhotoDTO[]
@@ -98,9 +121,13 @@ export function PhotoAlbumView({
         eyebrow="Foto's"
         title={album.name}
         description={
-          album.createdByName
-            ? `Aangemaakt door ${album.createdByName}. Iedereen kan foto's toevoegen. Een foto verwijderen kan degene die hem heeft geüpload, of een beheerder.`
-            : "Iedereen kan foto's toevoegen. Een foto verwijderen kan degene die hem heeft geüpload, of een beheerder."
+          [
+            album.eventDate,
+            album.createdByName ? `Aangemaakt door ${album.createdByName}.` : null,
+            "Iedereen kan foto's toevoegen. Een foto verwijderen kan degene die hem heeft geüpload, of een beheerder.",
+          ]
+            .filter(Boolean)
+            .join(" ")
         }
         action={
           <div className="flex flex-wrap items-center gap-2">
@@ -110,7 +137,7 @@ export function PhotoAlbumView({
             {album.canManage ? (
               <>
                 <Button type="button" variant="outline" onClick={() => setRenaming(true)}>
-                  Hernoemen
+                  Bewerken
                 </Button>
                 <ConfirmDelete
                   action={deleteAlbum}
@@ -157,10 +184,17 @@ export function PhotoAlbumView({
       <Dialog open={renaming} onOpenChange={setRenaming}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Map hernoemen</DialogTitle>
-            <DialogDescription>De foto's in deze map blijven staan.</DialogDescription>
+            <DialogTitle>Map bewerken</DialogTitle>
+            <DialogDescription>Pas de naam en de datum aan. De foto's blijven staan.</DialogDescription>
           </DialogHeader>
-          {renaming ? <RenameForm id={album.id} name={album.name} onDone={() => setRenaming(false)} /> : null}
+          {renaming ? (
+            <RenameForm
+              id={album.id}
+              name={album.name}
+              eventDate={album.eventDate}
+              onDone={() => setRenaming(false)}
+            />
+          ) : null}
         </DialogContent>
       </Dialog>
 

@@ -70,6 +70,12 @@ export const albumSchema = z.object({
     .trim()
     .min(2, { message: "Vul een naam voor de map in." })
     .max(80, { message: "De naam van de map is te lang." }),
+  eventDate: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || parseCalendarDate(value) !== null, {
+      message: "Vul een datum in, bijvoorbeeld 29/09/2026.",
+    }),
 })
 
 export const documentSchema = z.object({

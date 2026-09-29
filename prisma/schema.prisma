@@ -85,15 +85,17 @@ model Event {
 }
 
 model PhotoAlbum {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
+  eventDate   DateTime? @db.Date
   createdById String?
-  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
   photos      Photo[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([createdById])
+  @@index([eventDate])
 }
 
 model Photo {

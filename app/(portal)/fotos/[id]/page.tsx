@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { PhotoAlbumView } from "@/components/photo-album"
 import { auth } from "@/auth"
+import { formatCalendarDate } from "@/lib/dates"
 import { prisma } from "@/lib/prisma"
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -36,6 +37,7 @@ export default async function FotoAlbumPage({ params }: { params: Promise<{ id: 
       album={{
         id: album.id,
         name: album.name,
+        eventDate: album.eventDate ? formatCalendarDate(album.eventDate) : null,
         createdByName: album.createdBy?.name ?? null,
         canManage: isAdmin || album.createdById === userId,
         photos: album.photos.map((photo) => ({

@@ -43,6 +43,18 @@ function AlbumNameForm({
       <Field label="Naam" htmlFor="album-name">
         <Input id="album-name" name="name" defaultValue={album?.name} required autoFocus />
       </Field>
+      <Field label="Datum" htmlFor="album-date" hint="Bijvoorbeeld 29/09/2026. Optioneel. De mapjes staan op deze datum.">
+        <Input
+          id="album-date"
+          name="eventDate"
+          type="text"
+          autoComplete="off"
+          spellCheck={false}
+          maxLength={10}
+          placeholder="29/09/2026"
+          defaultValue={album?.eventDate ?? ""}
+        />
+      </Field>
       <FormError message={state.error} />
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onDone}>
@@ -69,10 +81,10 @@ function AlbumDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{album ? "Map hernoemen" : "Map maken"}</DialogTitle>
+          <DialogTitle>{album ? "Map bewerken" : "Map maken"}</DialogTitle>
           <DialogDescription>
             {album
-              ? "De foto's in deze map blijven staan."
+              ? "Pas de naam en de datum aan. De foto's blijven staan."
               : "Daarna kun je foto's in de map zetten. Andere leden kunnen dat ook."}
           </DialogDescription>
         </DialogHeader>
@@ -91,7 +103,8 @@ export function PhotoLibrary({ albums }: { albums: AlbumDTO[] }) {
     ? albums.filter((album) => {
         const name = album.name.toLocaleLowerCase("nl")
         const creator = album.createdByName?.toLocaleLowerCase("nl") ?? ""
-        return name.includes(needle) || creator.includes(needle)
+        const date = album.eventDate?.toLocaleLowerCase("nl") ?? ""
+        return name.includes(needle) || creator.includes(needle) || date.includes(needle)
       })
     : albums
 
@@ -143,6 +156,7 @@ export function PhotoLibrary({ albums }: { albums: AlbumDTO[] }) {
                 </div>
                 <div className="space-y-1 px-3 pt-3">
                   <h2 className="font-serif text-xl leading-tight">{album.name}</h2>
+                  {album.eventDate ? <p className="text-sm text-primary">{album.eventDate}</p> : null}
                   <p className="text-sm text-muted-foreground">{photoLabel(album.photoCount)}</p>
                   {album.createdByName ? (
                     <p className="text-xs text-muted-foreground">Aangemaakt door {album.createdByName}</p>
@@ -152,7 +166,7 @@ export function PhotoLibrary({ albums }: { albums: AlbumDTO[] }) {
               {album.canManage ? (
                 <div className="flex items-center gap-1 px-3 py-3">
                   <Button type="button" variant="outline" size="sm" onClick={() => setRenaming(album)}>
-                    Hernoemen
+                    Bewerken
                   </Button>
                   <ConfirmDelete
                     action={deleteAlbum}

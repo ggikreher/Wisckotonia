@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
+import { parseCalendarDate } from "@/lib/dates"
 import { inspectImage, prismaBytes, removeStoredFile, storeUpload } from "@/lib/files"
 import { prisma } from "@/lib/prisma"
 import type { ActionState } from "@/lib/types"
@@ -32,11 +33,18 @@ export async function createAlbum(_prev: ActionState, formData: FormData): Promi
   const user = await requireUser()
   if (!user) return { error: "Log in om een map te maken." }
 
-  const parsed = albumSchema.safeParse({ name: formData.get("name") })
+  const parsed = albumSchema.safeParse({
+    name: formData.get("name"),
+    eventDate: formData.get("eventDate") ?? "",
+  })
   if (!parsed.success) return { error: issueMessage(parsed.error) }
 
   await prisma.photoAlbum.create({
-    data: { name: parsed.data.name, createdById: user.id },
+    data: {
+      name: parsed.data.name,
+      eventDate: parsed.data.eventDate ? parseCalendarDate(parsed.data.eventDate) : null,
+      createdById: user.id,
+    },
   })
   refresh()
   return done("Map gemaakt.")
@@ -44,21 +52,30 @@ export async function createAlbum(_prev: ActionState, formData: FormData): Promi
 
 export async function renameAlbum(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await requireUser()
-  if (!user) return { error: "Log in om een map te hernoemen." }
+  if (!user) return { error: "Log in om een map te bewerken." }
 
   const id = String(formData.get("id") ?? "")
   const existing = await prisma.photoAlbum.findUnique({ where: { id } })
   if (!existing) return { error: "Deze map bestaat niet meer." }
   if (!canManage(user, existing.createdById)) {
-    return { error: "Je kunt alleen je eigen mapjes hernoemen." }
+    return { error: "Je kunt alleen je eigen mapjes bewerken." }
   }
 
-  const parsed = albumSchema.safeParse({ name: formData.get("name") })
+  const parsed = albumSchema.safeParse({
+    name: formData.get("name"),
+    eventDate: formData.get("eventDate") ?? "",
+  })
   if (!parsed.success) return { error: issueMessage(parsed.error) }
 
-  await prisma.photoAlbum.update({ where: { id }, data: { name: parsed.data.name } })
+  await prisma.photoAlbum.update({
+    where: { id },
+    data: {
+      name: parsed.data.name,
+      eventDate: parsed.data.eventDate ? parseCalendarDate(parsed.data.eventDate) : null,
+    },
+  })
   refresh(id)
-  return done("Map hernoemd.")
+  return done("Map bijgewerkt.")
 }
 
 export async function deleteAlbum(_prev: ActionState, formData: FormData): Promise<ActionState> {

@@ -46,6 +46,7 @@ export type EventDTO = {
 export type AlbumDTO = {
   id: string
   name: string
+  eventDate: string | null
   photoCount: number
   coverPhotoId: string | null
   createdByName: string | null
