@@ -48,6 +48,7 @@ model User {
   events       Event[]
   albums       PhotoAlbum[]
   photos       Photo[]
+  declarations Declaration[]
 }
 
 model Member {
@@ -56,6 +57,7 @@ model Member {
   title       String
   bio         String
   memberSince DateTime? @db.Date
+  birthDate   DateTime? @db.Date
   boardRole   BoardRole? @unique
   category    MemberCategory?
   imagePath      String?
@@ -125,4 +127,29 @@ model Document {
   updatedAt   DateTime @updatedAt
 
   @@index([category])
+}
+
+/// Kleine afbeelding rechtsonder in het menu. Eén rij met id "default".
+model SponsorLink {
+  id         String   @id
+  url        String
+  imageBytes Bytes?
+  imageType  String?
+  updatedAt  DateTime @updatedAt
+}
+
+model Declaration {
+  id           String   @id @default(cuid())
+  amountCents  Int
+  reason       String
+  bankAccount  String
+  accountName  String
+  imageBytes   Bytes?
+  imageType    String?
+  createdById  String
+  createdBy    User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  @@index([createdById])
+  @@index([createdAt])
 }

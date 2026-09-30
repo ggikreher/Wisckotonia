@@ -144,6 +144,43 @@ export function formatLongDate(date: Date) {
   }).format(date)
 }
 
+export function calendarKey(year: number, month: number, day: number) {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+}
+
+function isLeapYear(year: number) {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0
+}
+
+/** 29 februari valt in een jaar zonder die dag op 28 februari. */
+export function observedBirthday(year: number, month: number, day: number) {
+  if (month === 2 && day === 29 && !isLeapYear(year)) return { year, month: 2, day: 28 }
+  return { year, month, day }
+}
+
+export function nextBirthday(
+  birth: { year: number; month: number; day: number },
+  today: { year: number; month: number; day: number },
+) {
+  const thisYear = observedBirthday(today.year, birth.month, birth.day)
+  const thisKey = calendarKey(thisYear.year, thisYear.month, thisYear.day)
+  const todayKey = calendarKey(today.year, today.month, today.day)
+  const occurrence = thisKey >= todayKey ? thisYear : observedBirthday(today.year + 1, birth.month, birth.day)
+  return {
+    ...occurrence,
+    key: calendarKey(occurrence.year, occurrence.month, occurrence.day),
+    age: occurrence.year - birth.year,
+  }
+}
+
+export function formatDayMonth(year: number, month: number, day: number) {
+  return new Intl.DateTimeFormat("nl-NL", {
+    timeZone: "UTC",
+    day: "numeric",
+    month: "long",
+  }).format(new Date(Date.UTC(year, month - 1, day)))
+}
+
 export function formatMonthLabel(year: number, month: number) {
   return new Intl.DateTimeFormat("nl-NL", {
     month: "long",

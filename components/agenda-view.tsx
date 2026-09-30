@@ -18,8 +18,17 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { deleteEvent, saveEvent } from "@/lib/actions/events"
-import { amsterdamParts, formatMonthLabel, formatTime, formatTypedDateTime } from "@/lib/dates"
-import type { EventDTO } from "@/lib/types"
+import {
+  amsterdamParts,
+  calendarKey,
+  formatDayMonth,
+  formatMonthLabel,
+  formatTime,
+  formatTypedDateTime,
+  nextBirthday,
+  observedBirthday,
+} from "@/lib/dates"
+import type { BirthdayDTO, EventDTO } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 const WEEKDAYS = ["ma", "di", "wo", "do", "vr", "za", "zo"]
@@ -129,9 +138,36 @@ function EventForm({ event, onDone }: { event?: EventDTO | null; onDone: () => v
   )
 }
 
-export function AgendaView({ events, now }: { events: EventDTO[]; now: string }) {
+function joinNames(names: string[]) {
+  if (names.length <= 1) return names[0] ?? ""
+  if (names.length === 2) return `${names[0]} en ${names[1]}`
+  return `${names.slice(0, -1).join(", ")} en ${names[names.length - 1]}`
+}
+
+function BirthdayBadge({ year, month, day }: { year: number; month: number; day: number }) {
+  const label = new Intl.DateTimeFormat("nl-NL", { timeZone: "UTC", month: "short" })
+    .format(new Date(Date.UTC(year, month - 1, day)))
+    .replace(".", "")
+
+  return (
+    <div className="flex w-14 shrink-0 flex-col items-center rounded-lg border border-[#b7e4c7] bg-[#e7f8ec] py-2 text-[#14532d]">
+      <span className="font-serif text-2xl leading-none">{day}</span>
+      <span className="mt-1 text-[11px] tracking-wider uppercase">{label}</span>
+    </div>
+  )
+}
+
+export function AgendaView({
+  events,
+  birthdays,
+  now,
+}: {
+  events: EventDTO[]
+  birthdays: BirthdayDTO[]
+  now: string
+}) {
   const nowMs = new Date(now).getTime()
-  const today = amsterdamParts(new Date(now))
+  const today = useMemo(() => amsterdamParts(new Date(now)), [now])
   const [cursor, setCursor] = useState({ year: today.year, month: today.month })
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -143,6 +179,37 @@ export function AgendaView({ events, now }: { events: EventDTO[]; now: string })
     return keys
   }, [events])
 
+  const cells = useMemo(() => monthCells(cursor.year, cursor.month), [cursor.year, cursor.month])
+
+  const birthdaysByDay = useMemo(() => {
+    const map = new Map<string, BirthdayDTO[]>()
+    const years = new Set(cells.map((cell) => Number(cell.key.slice(0, 4))))
+    for (const year of years) {
+      for (const birthday of birthdays) {
+        const observed = observedBirthday(year, birthday.month, birthday.day)
+        const key = calendarKey(observed.year, observed.month, observed.day)
+        const list = map.get(key) ?? []
+        list.push(birthday)
+        map.set(key, list)
+      }
+    }
+    for (const list of map.values()) list.sort((a, b) => a.name.localeCompare(b.name, "nl"))
+    return map
+  }, [birthdays, cells])
+
+  const upcomingBirthday = useMemo(() => {
+    const ranked = birthdays
+      .map((birthday) => ({ birthday, occurrence: nextBirthday(birthday, today) }))
+      .sort(
+        (a, b) =>
+          a.occurrence.key.localeCompare(b.occurrence.key) || a.birthday.name.localeCompare(b.birthday.name, "nl"),
+      )
+    const first = ranked[0]
+    if (!first) return null
+    const people = ranked.filter((item) => item.occurrence.key === first.occurrence.key)
+    return { occurrence: first.occurrence, people }
+  }, [birthdays, today])
+
   const visible = events.filter((event) => {
     const key = amsterdamParts(new Date(event.startsAt)).key
     if (selectedKey) return key === selectedKey
@@ -151,7 +218,20 @@ export function AgendaView({ events, now }: { events: EventDTO[]; now: string })
   })
 
   const nextEvent = events.find((event) => new Date(event.startsAt).getTime() >= nowMs)
-  const cells = monthCells(cursor.year, cursor.month)
+
+  const birthdayRows = (selectedKey ? [selectedKey] : cells.filter((cell) => cell.inMonth).map((cell) => cell.key))
+    .flatMap((key) => {
+      const [year, month, day] = key.split("-").map(Number)
+      return (birthdaysByDay.get(key) ?? []).map((birthday) => ({
+        birthday,
+        key,
+        year,
+        month,
+        day,
+        age: year - birthday.year,
+      }))
+    })
+    .sort((a, b) => a.key.localeCompare(b.key) || a.birthday.name.localeCompare(b.birthday.name, "nl"))
 
   function openDay(key: string) {
     const [year, month] = key.split("-").map(Number)
@@ -172,18 +252,52 @@ export function AgendaView({ events, now }: { events: EventDTO[]; now: string })
         }
       />
 
-      {nextEvent ? (
-        <button
-          type="button"
-          onClick={() => openDay(amsterdamParts(new Date(nextEvent.startsAt)).key)}
-          className="mb-6 flex w-full items-center justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3 text-left hover:border-brass/50"
-        >
-          <span>
-            <span className="block text-[11px] tracking-[0.16em] text-brass uppercase">Eerstvolgende</span>
-            <span className="mt-1 block font-serif text-xl">{nextEvent.title}</span>
-          </span>
-          <span className="text-sm text-muted-foreground">{formatTime(new Date(nextEvent.startsAt))}</span>
-        </button>
+      {nextEvent || upcomingBirthday ? (
+        <div className={cn("mb-6 grid gap-3", nextEvent && upcomingBirthday && "sm:grid-cols-2")}>
+          {nextEvent ? (
+            <button
+              type="button"
+              onClick={() => openDay(amsterdamParts(new Date(nextEvent.startsAt)).key)}
+              className="flex w-full items-center justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3 text-left hover:border-brass/50"
+            >
+              <span>
+                <span className="block text-[11px] tracking-[0.16em] text-brass uppercase">Eerstvolgende</span>
+                <span className="mt-1 block font-serif text-xl">{nextEvent.title}</span>
+              </span>
+              <span className="text-sm text-muted-foreground">{formatTime(new Date(nextEvent.startsAt))}</span>
+            </button>
+          ) : null}
+          {upcomingBirthday ? (
+            <button
+              type="button"
+              onClick={() => openDay(upcomingBirthday.occurrence.key)}
+              className="flex w-full items-center justify-between gap-4 rounded-xl border border-[#b7e4c7] bg-[#f3fbf5] px-4 py-3 text-left hover:border-[#7dcea0]"
+            >
+              <span>
+                <span className="block text-[11px] tracking-[0.16em] text-[#1b7a45] uppercase">
+                  Eerstvolgende verjaardag
+                </span>
+                <span className="mt-1 block font-serif text-xl">
+                  {joinNames(upcomingBirthday.people.map((person) => person.birthday.name))}
+                </span>
+              </span>
+              <span className="text-right text-sm text-muted-foreground">
+                <span className="block">
+                  {upcomingBirthday.occurrence.key === today.key
+                    ? "Vandaag"
+                    : formatDayMonth(
+                        upcomingBirthday.occurrence.year,
+                        upcomingBirthday.occurrence.month,
+                        upcomingBirthday.occurrence.day,
+                      )}
+                </span>
+                {upcomingBirthday.people.length === 1 ? (
+                  <span className="block">wordt {upcomingBirthday.people[0]?.occurrence.age}</span>
+                ) : null}
+              </span>
+            </button>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="grid gap-8 lg:grid-cols-[20rem_minmax(0,1fr)]">
@@ -239,6 +353,7 @@ export function AgendaView({ events, now }: { events: EventDTO[]; now: string })
             {cells.map((cell) => {
               const selected = selectedKey === cell.key
               const hasEvent = keysWithEvents.has(cell.key)
+              const hasBirthday = birthdaysByDay.has(cell.key)
               const isToday = cell.key === today.key
               return (
                 <button
@@ -246,12 +361,16 @@ export function AgendaView({ events, now }: { events: EventDTO[]; now: string })
                   type="button"
                   onClick={() => openDay(cell.key)}
                   aria-pressed={selected}
-                  aria-label={cell.key}
+                  aria-label={hasBirthday ? `${cell.key}, verjaardag` : cell.key}
                   className={cn(
                     "relative flex h-10 items-center justify-center rounded-md text-sm",
-                    hasEvent || selected
-                      ? "bg-primary text-primary-foreground"
-                      : cn(cell.inMonth ? "text-foreground" : "text-muted-foreground/50", "hover:bg-secondary"),
+                    hasBirthday && hasEvent
+                      ? "bg-[#b7e4c7] text-[#14532d] shadow-[inset_0_0_0_2px_#000080]"
+                      : hasBirthday
+                        ? "bg-[#b7e4c7] text-[#14532d]"
+                        : hasEvent || selected
+                          ? "bg-primary text-primary-foreground"
+                          : cn(cell.inMonth ? "text-foreground" : "text-muted-foreground/50", "hover:bg-secondary"),
                     selected ? "ring-2 ring-brass" : isToday ? "ring-1 ring-brass" : null,
                   )}
                 >
@@ -259,6 +378,16 @@ export function AgendaView({ events, now }: { events: EventDTO[]; now: string })
                 </button>
               )
             })}
+          </div>
+          <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-3 rounded-sm bg-primary" />
+              Evenement
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-3 rounded-sm bg-[#b7e4c7]" />
+              Verjaardag
+            </span>
           </div>
           {selectedKey ? (
             <button
@@ -272,54 +401,80 @@ export function AgendaView({ events, now }: { events: EventDTO[]; now: string })
         </section>
 
         <section className="space-y-3">
-          {visible.length === 0 ? (
+          {visible.length === 0 && birthdayRows.length === 0 ? (
             <EmptyState
               title="Geen evenementen"
               text={selectedKey ? "Op deze dag staat niets gepland." : "In deze maand staat niets gepland."}
             />
           ) : (
-            visible.map((event) => {
-              const past = new Date(event.startsAt).getTime() < nowMs
-              return (
-                <article
-                  key={event.id}
-                  className={cn("flex gap-4 rounded-xl border border-border bg-card p-4", past && "opacity-70")}
-                >
-                  <DateBadge iso={event.startsAt} />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-serif text-2xl leading-tight">{event.title}</h3>
-                    <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Clock className="size-3.5" />
-                        {formatTime(new Date(event.startsAt))}
-                        {event.endsAt ? ` – ${formatTime(new Date(event.endsAt))}` : ""}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <MapPin className="size-3.5" />
-                        {event.location}
-                      </span>
-                    </p>
-                    <p className="mt-3 text-sm leading-6">{event.description}</p>
-                    {event.createdByName ? (
-                      <p className="mt-2 text-xs text-muted-foreground">Aangemaakt door {event.createdByName}</p>
-                    ) : null}
-                    {event.canManage ? (
-                      <div className="mt-3 flex gap-1">
-                        <Button type="button" variant="outline" size="sm" onClick={() => setEditing(event)}>
-                          Bewerken
-                        </Button>
-                        <ConfirmDelete
-                          action={deleteEvent}
-                          id={event.id}
-                          title="Evenement verwijderen"
-                          description={`“${event.title}” wordt uit de agenda gehaald.`}
-                        />
+            [...birthdayRows.map((row) => ({ kind: "birthday" as const, sort: row.key, row })), ...visible.map((event) => ({
+              kind: "event" as const,
+              sort: `${amsterdamParts(new Date(event.startsAt)).key}T${event.startsAt}`,
+              event,
+            }))]
+              .sort((a, b) => a.sort.localeCompare(b.sort))
+              .map((item) => {
+                if (item.kind === "birthday") {
+                  const row = item.row
+                  return (
+                    <article
+                      key={`${row.birthday.id}-${row.key}`}
+                      className="flex gap-4 rounded-xl border border-[#b7e4c7] bg-[#f3fbf5] p-4"
+                    >
+                      <BirthdayBadge year={row.year} month={row.month} day={row.day} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] tracking-[0.16em] text-[#1b7a45] uppercase">Verjaardag</p>
+                        <h3 className="font-serif text-2xl leading-tight">{row.birthday.name}</h3>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          {row.key < today.key ? "Werd" : "Wordt"} {row.age} jaar
+                        </p>
                       </div>
-                    ) : null}
-                  </div>
-                </article>
-              )
-            })
+                    </article>
+                  )
+                }
+
+                const event = item.event
+                const past = new Date(event.startsAt).getTime() < nowMs
+                return (
+                  <article
+                    key={event.id}
+                    className={cn("flex gap-4 rounded-xl border border-border bg-card p-4", past && "opacity-70")}
+                  >
+                    <DateBadge iso={event.startsAt} />
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-serif text-2xl leading-tight">{event.title}</h3>
+                      <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                          <Clock className="size-3.5" />
+                          {formatTime(new Date(event.startsAt))}
+                          {event.endsAt ? ` – ${formatTime(new Date(event.endsAt))}` : ""}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <MapPin className="size-3.5" />
+                          {event.location}
+                        </span>
+                      </p>
+                      <p className="mt-3 text-sm leading-6">{event.description}</p>
+                      {event.createdByName ? (
+                        <p className="mt-2 text-xs text-muted-foreground">Aangemaakt door {event.createdByName}</p>
+                      ) : null}
+                      {event.canManage ? (
+                        <div className="mt-3 flex gap-1">
+                          <Button type="button" variant="outline" size="sm" onClick={() => setEditing(event)}>
+                            Bewerken
+                          </Button>
+                          <ConfirmDelete
+                            action={deleteEvent}
+                            id={event.id}
+                            title="Evenement verwijderen"
+                            description={`“${event.title}” wordt uit de agenda gehaald.`}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  </article>
+                )
+              })
           )}
         </section>
       </div>

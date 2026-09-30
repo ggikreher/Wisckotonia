@@ -27,15 +27,17 @@ export async function saveMember(_prev: ActionState, formData: FormData): Promis
     title: formData.get("title"),
     bio: formData.get("bio"),
     memberSince: formData.get("memberSince") ?? "",
+    birthDate: formData.get("birthDate") ?? "",
     boardRole: formData.get("boardRole") ?? "",
     category: formData.get("category") ?? "",
   })
   if (!parsed.success) return { error: issueMessage(parsed.error) }
 
-  const { memberSince, boardRole, category, ...memberFields } = parsed.data
+  const { memberSince, birthDate, boardRole, category, ...memberFields } = parsed.data
   const memberData = {
     ...memberFields,
     memberSince: memberSince ? parseCalendarDate(memberSince) : null,
+    birthDate: birthDate ? parseCalendarDate(birthDate) : null,
     boardRole: boardRole || null,
     category,
   }

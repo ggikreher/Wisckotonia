@@ -20,6 +20,7 @@ export default async function LedenPage() {
         title: member.title,
         bio: member.bio,
         memberSince: member.memberSince ? formatCalendarDate(member.memberSince) : null,
+        birthDate: member.birthDate ? formatCalendarDate(member.birthDate) : null,
         boardRole: member.boardRole,
         category: member.category,
         hasPhoto: Boolean(member.imagePath),

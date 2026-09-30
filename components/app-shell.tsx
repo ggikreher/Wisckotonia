@@ -1,10 +1,11 @@
 "use client"
 
-import { CalendarDays, Coins, Files, Images, LayoutDashboard, LogOut, Menu, Shield, Users, X } from "lucide-react"
+import { CalendarDays, Coins, Files, Images, LayoutDashboard, LogOut, Menu, Receipt, Shield, Users, X } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, type ReactNode } from "react"
 import { Mark } from "@/components/mark"
+import { SponsorBadge } from "@/components/sponsor-badge"
 import { logout } from "@/lib/actions/auth"
 import { roleLabel } from "@/lib/constants"
 import type { SessionUser } from "@/lib/types"
@@ -13,10 +14,10 @@ import { cn } from "@/lib/utils"
 const links = [
   { href: "/", label: "Overzicht", icon: LayoutDashboard },
   { href: "/leden", label: "Leden", icon: Users },
-  { href: "/punten", label: "Punten sparen", icon: Coins },
   { href: "/agenda", label: "Agenda", icon: CalendarDays },
   { href: "/fotos", label: "Foto's", icon: Images },
   { href: "/documenten", label: "Documenten", icon: Files },
+  { href: "/punten", label: "Punten sparen", icon: Coins },
 ]
 
 function NavLinks({ user, onNavigate }: { user: SessionUser; onNavigate?: () => void }) {
@@ -44,11 +45,33 @@ function NavLinks({ user, onNavigate }: { user: SessionUser; onNavigate?: () => 
           </Link>
         )
       })}
+      <Link
+        href="/declaratie"
+        onClick={onNavigate}
+        aria-current={pathname.startsWith("/declaratie") ? "page" : undefined}
+        className={cn(
+          "mt-auto flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+          pathname.startsWith("/declaratie")
+            ? "bg-white/10 text-white"
+            : "text-sidebar-foreground/75 hover:bg-white/5 hover:text-white",
+        )}
+      >
+        <Receipt className="size-4" />
+        Declaratie
+      </Link>
     </nav>
   )
 }
 
-function SidebarBody({ user, onNavigate }: { user: SessionUser; onNavigate?: () => void }) {
+function SidebarBody({
+  user,
+  sponsor,
+  onNavigate,
+}: {
+  user: SessionUser
+  sponsor: { url: string; hasImage: boolean; updatedAt: string | null }
+  onNavigate?: () => void
+}) {
   return (
     <>
       <div className="flex items-center gap-3 px-5 py-6">
@@ -60,30 +83,43 @@ function SidebarBody({ user, onNavigate }: { user: SessionUser; onNavigate?: () 
       </div>
       <NavLinks user={user} onNavigate={onNavigate} />
       <div className="border-t border-white/10 p-4">
-        <p className="truncate text-sm text-white">{user.name}</p>
-        <p className="truncate text-xs text-sidebar-foreground/60">@{user.username}</p>
-        <p className="mt-1 text-[11px] tracking-wide text-brass uppercase">{roleLabel(user.role)}</p>
-        <form action={logout}>
-          <button
-            type="submit"
-            className="mt-3 flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-sidebar-foreground/80 hover:bg-white/10 hover:text-white"
-          >
-            <LogOut className="size-4" />
-            Uitloggen
-          </button>
-        </form>
+        <div className="flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm text-white">{user.name}</p>
+            <p className="truncate text-xs text-sidebar-foreground/60">@{user.username}</p>
+            <p className="mt-1 text-[11px] tracking-wide text-brass uppercase">{roleLabel(user.role)}</p>
+            <form action={logout}>
+              <button
+                type="submit"
+                className="mt-3 flex items-center gap-2 rounded-md px-2 py-2 text-sm text-sidebar-foreground/80 hover:bg-white/10 hover:text-white"
+              >
+                <LogOut className="size-4" />
+                Uitloggen
+              </button>
+            </form>
+          </div>
+          <SponsorBadge role={user.role} url={sponsor.url} hasImage={sponsor.hasImage} updatedAt={sponsor.updatedAt} />
+        </div>
       </div>
     </>
   )
 }
 
-export function AppShell({ user, children }: { user: SessionUser; children: ReactNode }) {
+export function AppShell({
+  user,
+  sponsor,
+  children,
+}: {
+  user: SessionUser
+  sponsor: { url: string; hasImage: boolean; updatedAt: string | null }
+  children: ReactNode
+}) {
   const [open, setOpen] = useState(false)
 
   return (
     <div className="min-h-screen md:grid md:grid-cols-[17.5rem_minmax(0,1fr)]">
       <aside className="sticky top-0 hidden h-screen flex-col bg-sidebar text-sidebar-foreground md:flex">
-        <SidebarBody user={user} />
+        <SidebarBody user={user} sponsor={sponsor} />
       </aside>
 
       <div className="min-w-0">
@@ -119,7 +155,7 @@ export function AppShell({ user, children }: { user: SessionUser; children: Reac
               >
                 <X className="size-4" />
               </button>
-              <SidebarBody user={user} onNavigate={() => setOpen(false)} />
+              <SidebarBody user={user} sponsor={sponsor} onNavigate={() => setOpen(false)} />
             </div>
           </div>
         ) : null}

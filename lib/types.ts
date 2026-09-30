@@ -26,10 +26,19 @@ export type MemberDTO = {
   title: string
   bio: string
   memberSince: string | null
+  birthDate: string | null
   boardRole: BoardRole | null
   category: MemberCategory | null
   hasPhoto: boolean
   updatedAt: string
+}
+
+export type BirthdayDTO = {
+  id: string
+  name: string
+  year: number
+  month: number
+  day: number
 }
 
 export type EventDTO = {

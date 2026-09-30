@@ -148,6 +148,18 @@ function MemberForm({ member, onDone }: { member?: MemberDTO | null; onDone: () 
           ))}
         </select>
       </Field>
+      <Field label="Geboortedatum" htmlFor="birthDate" hint="Bijvoorbeeld 29/09/2000. Optioneel.">
+        <Input
+          id="birthDate"
+          name="birthDate"
+          type="text"
+          autoComplete="bday"
+          spellCheck={false}
+          maxLength={10}
+          placeholder="29/09/2000"
+          defaultValue={member?.birthDate ?? ""}
+        />
+      </Field>
       <Field label="Lid sinds" htmlFor="memberSince" hint="Bijvoorbeeld 29/09/2019. Optioneel.">
         <Input
           id="memberSince"
@@ -246,6 +258,9 @@ export function MemberGallery({ members, isAdmin }: { members: MemberDTO[]; isAd
                   ) : null}
                   {member.boardRole && member.title ? (
                     <p className="mt-1 text-sm text-muted-foreground">{member.title}</p>
+                  ) : null}
+                  {member.birthDate ? (
+                    <p className="mt-1 text-sm text-muted-foreground">Geboren {member.birthDate}</p>
                   ) : null}
                   {member.memberSince ? (
                     <p className="mt-1 text-sm text-muted-foreground">Lid sinds {member.memberSince}</p>

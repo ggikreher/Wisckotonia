@@ -1,9 +1,8 @@
 import Link from "next/link"
 import { DateBadge } from "@/components/date-badge"
 import { auth } from "@/auth"
-import { greetingForNow } from "@/lib/dates"
-import { BOARD_ROLES, boardRoleLabel, formatBytes } from "@/lib/constants"
-import { formatTime } from "@/lib/dates"
+import { amsterdamParts, formatDayMonth, formatTime, greetingForNow, nextBirthday } from "@/lib/dates"
+import { BOARD_ROLES, boardRoleLabel } from "@/lib/constants"
 import { prisma } from "@/lib/prisma"
 
 export default async function HomePage() {
@@ -11,7 +10,7 @@ export default async function HomePage() {
   const name = session?.user.name ?? session?.user.username ?? "dispuutsgenoot"
   const now = new Date()
 
-  const [memberCount, documentCount, albumCount, upcomingCount, board, upcoming, documents] = await Promise.all([
+  const [memberCount, documentCount, albumCount, upcomingCount, board, upcoming, members] = await Promise.all([
     prisma.member.count(),
     prisma.document.count(),
     prisma.photoAlbum.count(),
@@ -25,11 +24,28 @@ export default async function HomePage() {
       orderBy: { startsAt: "asc" },
       take: 3,
     }),
-    prisma.document.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 3,
+    prisma.member.findMany({
+      where: { birthDate: { not: null } },
+      select: { id: true, name: true, birthDate: true },
     }),
   ])
+
+  const today = amsterdamParts(now)
+  const nextBirthdays = members
+    .flatMap((member) => {
+      if (!member.birthDate) return []
+      const occurrence = nextBirthday(
+        {
+          year: member.birthDate.getUTCFullYear(),
+          month: member.birthDate.getUTCMonth() + 1,
+          day: member.birthDate.getUTCDate(),
+        },
+        today,
+      )
+      return [{ id: member.id, name: member.name, ...occurrence }]
+    })
+    .sort((a, b) => a.key.localeCompare(b.key) || a.name.localeCompare(b.name, "nl"))
+    .slice(0, 3)
 
   const stats = [
     { label: "Leden", value: memberCount, href: "/leden" },
@@ -110,23 +126,27 @@ export default async function HomePage() {
 
         <section>
           <div className="mb-3 flex items-end justify-between">
-            <h2 className="font-serif text-2xl">Recente stukken</h2>
-            <Link href="/documenten" className="text-sm text-primary hover:underline">
-              Archief
+            <h2 className="font-serif text-2xl">Eerstvolgende jarigen</h2>
+            <Link href="/agenda" className="text-sm text-primary hover:underline">
+              Agenda
             </Link>
           </div>
-          {documents.length === 0 ? (
+          {nextBirthdays.length === 0 ? (
             <p className="rounded-xl border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
-              Er zijn nog geen documenten geüpload.
+              Er zijn nog geen geboortedatums ingevuld.
             </p>
           ) : (
-            <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
-              {documents.map((document) => (
-                <li key={document.id}>
-                  <Link href="/documenten" className="block px-4 py-3 hover:bg-secondary/50">
-                    <span className="block font-medium">{document.title}</span>
+            <ul className="divide-y divide-[#cfe8d6] overflow-hidden rounded-xl border border-[#b7e4c7] bg-[#f3fbf5]">
+              {nextBirthdays.map((member) => (
+                <li key={member.id}>
+                  <Link href="/agenda" className="block px-4 py-3 hover:bg-[#e7f8ec]">
+                    <span className="block font-medium">{member.name}</span>
                     <span className="mt-1 block text-xs text-muted-foreground">
-                      {document.category} · {formatBytes(document.sizeBytes)}
+                      {member.key === today.key
+                        ? "Vandaag"
+                        : formatDayMonth(member.year, member.month, member.day)}
+                      {" · wordt "}
+                      {member.age}
                     </span>
                   </Link>
                 </li>

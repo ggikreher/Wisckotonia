@@ -21,6 +21,21 @@ export const memberSchema = z.object({
     .refine((value) => value === "" || parseCalendarDate(value) !== null, {
       message: "Vul een datum in, bijvoorbeeld 29/09/2019.",
     }),
+  birthDate: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || parseCalendarDate(value) !== null, {
+      message: "Vul een datum in, bijvoorbeeld 29/09/2000.",
+    })
+    .refine((value) => {
+      if (!value) return true
+      const date = parseCalendarDate(value)
+      if (!date) return true
+      const today = new Date()
+      return date.getTime() <= Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
+    }, {
+      message: "De geboortedatum kan niet in de toekomst liggen.",
+    }),
 })
 
 export const eventSchema = z
@@ -63,6 +78,55 @@ export const eventSchema = z
       })
     }
   })
+
+function parseAmountCents(value: string) {
+  const normalized = value.trim().replace(/\s/g, "").replace(",", ".")
+  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null
+  const cents = Math.round(Number(normalized) * 100)
+  if (!Number.isFinite(cents) || cents <= 0 || cents > 999999) return null
+  return cents
+}
+
+export function declarationAmountCents(value: string) {
+  return parseAmountCents(value)
+}
+
+export const sponsorLinkSchema = z.object({
+  url: z
+    .string()
+    .trim()
+    .refine((value) => {
+      try {
+        const url = new URL(value)
+        return url.protocol === "https:" || url.protocol === "http:"
+      } catch {
+        return false
+      }
+    }, { message: "Vul een geldige link in, bijvoorbeeld https://example.com." }),
+})
+
+export const declarationSchema = z.object({
+  amount: z.string().trim().refine((value) => parseAmountCents(value) !== null, {
+    message: "Vul een bedrag in, bijvoorbeeld 12,50.",
+  }),
+  reason: z
+    .string()
+    .trim()
+    .min(2, { message: "Vul een reden in." })
+    .max(400, { message: "Houd de reden onder 400 tekens." }),
+  bankAccount: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/\s+/g, "").toUpperCase())
+    .refine((value) => /^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(value), {
+      message: "Vul een IBAN in, bijvoorbeeld NL00 BANK 0123 4567 89.",
+    }),
+  accountName: z
+    .string()
+    .trim()
+    .min(2, { message: "Vul de tenaamstelling in." })
+    .max(80, { message: "De tenaamstelling is te lang." }),
+})
 
 export const albumSchema = z.object({
   name: z

@@ -8,14 +8,33 @@ export default async function AgendaPage() {
   const session = await auth()
   const userId = session?.user.id ?? ""
   const isAdmin = session?.user.role === "ADMIN"
-  const events = await prisma.event.findMany({
-    orderBy: { startsAt: "asc" },
-    include: { createdBy: { select: { name: true } } },
-  })
+  const [events, members] = await Promise.all([
+    prisma.event.findMany({
+      orderBy: { startsAt: "asc" },
+      include: { createdBy: { select: { name: true } } },
+    }),
+    prisma.member.findMany({
+      where: { birthDate: { not: null } },
+      select: { id: true, name: true, birthDate: true },
+      orderBy: { name: "asc" },
+    }),
+  ])
 
   return (
     <AgendaView
       now={new Date().toISOString()}
+      birthdays={members.flatMap((member) => {
+        if (!member.birthDate) return []
+        return [
+          {
+            id: member.id,
+            name: member.name,
+            year: member.birthDate.getUTCFullYear(),
+            month: member.birthDate.getUTCMonth() + 1,
+            day: member.birthDate.getUTCDate(),
+          },
+        ]
+      })}
       events={events.map((event) => ({
         id: event.id,
         title: event.title,
