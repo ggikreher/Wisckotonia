@@ -212,9 +212,101 @@ function MemberDialog({
   )
 }
 
+const CATEGORY_GROUPS = [
+  { category: "WISCKO", label: "Wiscko", bar: "bg-primary text-primary-foreground" },
+  { category: "MALT_WISCKO", label: "Malt-Wiscko", bar: "bg-[#6a4528] text-[#f6f1e8]" },
+  { category: "LES_WISKO", label: "Les-Wisko", bar: "bg-[#1c3b34] text-[#f6f1e8]" },
+] as const
+
+function MemberCard({
+  member,
+  isAdmin,
+  onEdit,
+}: {
+  member: MemberDTO
+  isAdmin: boolean
+  onEdit: (member: MemberDTO) => void
+}) {
+  return (
+    <li className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="aspect-square overflow-hidden bg-secondary">
+        <Portrait member={member} />
+      </div>
+      <div className="space-y-2 p-3">
+        <div>
+          <h3 className="font-serif text-xl leading-tight">{member.name}</h3>
+          {member.boardRole ? (
+            <p className="mt-1 text-[11px] tracking-[0.16em] text-brass uppercase">
+              {boardRoleLabel(member.boardRole)}
+            </p>
+          ) : member.title ? (
+            <p className="mt-1 text-[11px] tracking-[0.16em] text-brass uppercase">{member.title}</p>
+          ) : null}
+          {member.boardRole && member.title ? (
+            <p className="mt-1 text-sm text-muted-foreground">{member.title}</p>
+          ) : null}
+          {member.birthDate ? (
+            <p className="mt-1 text-sm text-muted-foreground">Geboren {member.birthDate}</p>
+          ) : null}
+          {member.memberSince ? (
+            <p className="mt-1 text-sm text-muted-foreground">Lid sinds {member.memberSince}</p>
+          ) : null}
+        </div>
+        {member.bio ? <p className="text-sm leading-6 text-muted-foreground">{member.bio}</p> : null}
+        {isAdmin ? (
+          <div className="flex items-center gap-1 pt-1">
+            <Button type="button" variant="outline" size="sm" onClick={() => onEdit(member)}>
+              Bewerken
+            </Button>
+            <ConfirmDelete
+              action={deleteMember}
+              id={member.id}
+              title="Lid verwijderen"
+              description={`${member.name} verdwijnt uit de galerij. Het inlogaccount, als dat bestaat, blijft bestaan.`}
+            />
+          </div>
+        ) : null}
+      </div>
+    </li>
+  )
+}
+
+function CategorySection({
+  label,
+  bar,
+  members,
+  isAdmin,
+  onEdit,
+}: {
+  label: string
+  bar: string
+  members: MemberDTO[]
+  isAdmin: boolean
+  onEdit: (member: MemberDTO) => void
+}) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-border">
+      <div className={`flex items-center justify-between px-4 py-3 ${bar}`}>
+        <h2 className="font-serif text-2xl">{label}</h2>
+        <p className="text-sm">{members.length}</p>
+      </div>
+      {members.length === 0 ? (
+        <p className="px-4 py-6 text-sm text-muted-foreground">Nog geen leden in deze categorie.</p>
+      ) : (
+        <ul className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+          {members.map((member) => (
+            <MemberCard key={member.id} member={member} isAdmin={isAdmin} onEdit={onEdit} />
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
 export function MemberGallery({ members, isAdmin }: { members: MemberDTO[]; isAdmin: boolean }) {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<MemberDTO | null>(null)
+  const uncategorized = members.filter((member) => member.category == null)
 
   return (
     <>
@@ -237,53 +329,27 @@ export function MemberGallery({ members, isAdmin }: { members: MemberDTO[]; isAd
           text={isAdmin ? "Voeg het eerste lid toe om de galerij te vullen." : "De galerij is nog leeg."}
         />
       ) : (
-        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
-          {members.map((member) => (
-            <li key={member.id} className="overflow-hidden rounded-xl border border-border bg-card">
-              <div className="aspect-square overflow-hidden bg-secondary">
-                <Portrait member={member} />
-              </div>
-              <div className="space-y-2 p-3">
-                <div>
-                  <h2 className="font-serif text-xl leading-tight">{member.name}</h2>
-                  {member.category ? (
-                    <p className="mt-1 text-sm text-primary">{memberCategoryLabel(member.category)}</p>
-                  ) : null}
-                  {member.boardRole ? (
-                    <p className="mt-1 text-[11px] tracking-[0.16em] text-brass uppercase">
-                      {boardRoleLabel(member.boardRole)}
-                    </p>
-                  ) : member.title ? (
-                    <p className="mt-1 text-[11px] tracking-[0.16em] text-brass uppercase">{member.title}</p>
-                  ) : null}
-                  {member.boardRole && member.title ? (
-                    <p className="mt-1 text-sm text-muted-foreground">{member.title}</p>
-                  ) : null}
-                  {member.birthDate ? (
-                    <p className="mt-1 text-sm text-muted-foreground">Geboren {member.birthDate}</p>
-                  ) : null}
-                  {member.memberSince ? (
-                    <p className="mt-1 text-sm text-muted-foreground">Lid sinds {member.memberSince}</p>
-                  ) : null}
-                </div>
-                {member.bio ? <p className="text-sm leading-6 text-muted-foreground">{member.bio}</p> : null}
-                {isAdmin ? (
-                  <div className="flex items-center gap-1 pt-1">
-                    <Button type="button" variant="outline" size="sm" onClick={() => setEditing(member)}>
-                      Bewerken
-                    </Button>
-                    <ConfirmDelete
-                      action={deleteMember}
-                      id={member.id}
-                      title="Lid verwijderen"
-                      description={`${member.name} verdwijnt uit de galerij. Het inlogaccount, als dat bestaat, blijft bestaan.`}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            </li>
+        <div className="space-y-8">
+          {CATEGORY_GROUPS.map((group) => (
+            <CategorySection
+              key={group.category}
+              label={group.label}
+              bar={group.bar}
+              members={members.filter((member) => member.category === group.category)}
+              isAdmin={isAdmin}
+              onEdit={setEditing}
+            />
           ))}
-        </ul>
+          {uncategorized.length > 0 ? (
+            <CategorySection
+              label="Zonder categorie"
+              bar="bg-secondary text-foreground"
+              members={uncategorized}
+              isAdmin={isAdmin}
+              onEdit={setEditing}
+            />
+          ) : null}
+        </div>
       )}
 
       <MemberDialog open={creating} onOpenChange={setCreating} />
