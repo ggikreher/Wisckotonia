@@ -1,6 +1,6 @@
 "use client"
 
-import { CalendarDays, Coins, Files, Images, LayoutDashboard, LogOut, Menu, Receipt, Shield, Users, X } from "lucide-react"
+import { CalendarDays, Coins, Files, Images, LayoutDashboard, LogOut, Menu, Receipt, Shield, Store, Users, X } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, type ReactNode } from "react"
@@ -16,6 +16,7 @@ const links = [
   { href: "/leden", label: "Leden", icon: Users },
   { href: "/agenda", label: "Agenda", icon: CalendarDays },
   { href: "/fotos", label: "Foto's", icon: Images },
+  { href: "/winkel", label: "De Wisko Winkel", icon: Store },
   { href: "/documenten", label: "Documenten", icon: Files },
   { href: "/punten", label: "Punten sparen", icon: Coins },
 ]

@@ -68,6 +68,16 @@ export type PhotoDTO = {
   canDelete: boolean
 }
 
+export type ShopItemDTO = {
+  id: string
+  description: string
+  quantity: number
+  priceCents: number
+  outOfStock: boolean
+  images: string[]
+  updatedAt: string
+}
+
 export type DocumentDTO = {
   id: string
   title: string

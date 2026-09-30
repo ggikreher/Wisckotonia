@@ -115,6 +115,29 @@ model Photo {
   @@index([createdById])
 }
 
+model ShopItem {
+  id          String      @id @default(cuid())
+  description String
+  quantity    Int
+  priceCents  Int
+  outOfStock  Boolean     @default(false)
+  images      ShopImage[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model ShopImage {
+  id         String   @id @default(cuid())
+  itemId     String
+  item       ShopItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  imageBytes Bytes
+  imageType  String
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([itemId])
+}
+
 model Document {
   id          String   @id @default(cuid())
   title       String

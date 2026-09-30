@@ -91,6 +91,43 @@ export function declarationAmountCents(value: string) {
   return parseAmountCents(value)
 }
 
+function parseShopCents(value: string) {
+  const normalized = value.trim().replace(/\s/g, "").replace(",", ".")
+  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null
+  const cents = Math.round(Number(normalized) * 100)
+  if (!Number.isFinite(cents) || cents < 0 || cents > 99999999) return null
+  return cents
+}
+
+function parseQuantity(value: string) {
+  if (!/^\d+$/.test(value.trim())) return null
+  const quantity = Number(value.trim())
+  if (quantity > 9999) return null
+  return quantity
+}
+
+export function shopItemPriceCents(value: string) {
+  return parseShopCents(value)
+}
+
+export function shopItemQuantity(value: string) {
+  return parseQuantity(value)
+}
+
+export const shopItemSchema = z.object({
+  description: z
+    .string()
+    .trim()
+    .min(2, { message: "Vul een omschrijving in." })
+    .max(400, { message: "Houd de omschrijving onder 400 tekens." }),
+  quantity: z.string().trim().refine((value) => parseQuantity(value) !== null, {
+    message: "Vul een aantal in, bijvoorbeeld 3.",
+  }),
+  price: z.string().trim().refine((value) => parseShopCents(value) !== null, {
+    message: "Vul de kosten in, bijvoorbeeld 12,50.",
+  }),
+})
+
 export const sponsorLinkSchema = z.object({
   url: z
     .string()
